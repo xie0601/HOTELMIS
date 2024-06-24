@@ -11,82 +11,90 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
-    filename = "D:\\hotel_information.txt";
-    loadData(filename);//从文件中读取数据
 }
 
 Widget::~Widget()
 {
     delete ui;
 }
-
-void Widget::loadData(const QString &filename)
+void Widget::on_into_clicked()
 {
-    QFile file(filename);
-    // 尝试打开文件
-    if (!file.open(QIODevice::ReadOnly)) // 以只读方式打开文件
+    //切换到查看页面
+    ui->stackedWidget->setCurrentWidget(ui->see);
+    //把list中的数据显示在表格中
+    ui->see1->setColumnCount(m_fields.size());
+    ui->see1->setHorizontalHeaderLabels(m_fields);
+    ui->see1->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->see1->verticalHeader()->show();
+    for(auto s : m_hotel)
     {
-        qInfo() << "open file failed";
-        return; // 如果不能打开文件，输出失败信息并返回
+        //获取数量（也就是将要增加新行的行号）
+        int row = ui->see1->rowCount();
+        //1.添加一空行
+        ui->see1->insertRow(ui->see1->rowCount());
+        //2.把数据设置到空行中
+        ui->see1->setItem(row,0,new QTableWidgetItem(s->id));
+        ui->see1->setItem(row,1,new QTableWidgetItem(s->name));
+        ui->see1->setItem(row,2,new QTableWidgetItem(QString::number(s->area)));
+        ui->see1->setItem(row,3,new QTableWidgetItem(QString::number(s->price)));
+        ui->see1->setItem(row,4,new QTableWidgetItem(QString::number(s->num)));
+        ui->see1->setItem(row,5,new QTableWidgetItem(s->state));
+        ui->see1->item(row,0)->setTextAlignment(Qt::AlignCenter);
+        ui->see1->item(row,1)->setTextAlignment(Qt::AlignCenter);
+        ui->see1->item(row,2)->setTextAlignment(Qt::AlignCenter);
+        ui->see1->item(row,3)->setTextAlignment(Qt::AlignCenter);
+        ui->see1->item(row,4)->setTextAlignment(Qt::AlignCenter);
+        ui->see1->item(row,5)->setTextAlignment(Qt::AlignCenter);
     }
-    QTextStream stream(&file);
-    stream.setEncoding(QStringConverter::Utf8);
-    // 读取表头（假设表头格式是固定的）
-    // qDebug()<<stream.readLine();
-    m_fields = stream.readLine().split("\t");
-    // 读取数据
-    while (!stream.atEnd())
-    {
-        QStringList lineData = stream.readLine().split("\t");
-        // 确保数据行包含足够的字段
-        if (lineData.size() < 6)
-        {
-            qInfo() << "incorrect data format";
-            continue; // 跳过格式不正确的行
-        }
-        // 分配新的 hotel 对象
-        auto s = new hotel;
-        // 填充 hotel 对象的数据
-        s->id    = lineData[0];
-        s->name  = lineData[1];
-        s->area  = lineData[2].toDouble();
-        s->price = lineData[3].toDouble();
-        s->num   = lineData[4].toDouble();
-        s->state = lineData[5];
-        // 将对象添加到 m_hotel 容器中
-        m_hotel.push_back(s);
-    }
-
-    // 确保文件在读取完毕后关闭
-    file.close();
 }
 
 
-void Widget::on_save_clicked()
+void Widget::on_quit_clicked()
 {
-    QFile file(filename);
-    // 尝试打开文件
-    if (!file.open(QIODevice::WriteOnly)) // 以只读方式打开文件
-    {
-        qInfo() << "open file failed";
-        return; // 如果不能打开文件，输出失败信息并返回
-    }
-    QTextStream stream(&file);
-    stream<<m_fields[0]<<"\t"<<m_fields[1]<<"\t"<<m_fields[2]<<"\t"<<m_fields[3]<<"\t"<<m_fields[4]<<"\t"<<m_fields[5]<<"\n";
-    //循环读取数据
-    for(int i=0;i<ui->see1->rowCount();i++){
-        for(int j=0;j<ui->see1->columnCount();j++){
-            if(ui->see1->item(i,j)!=NULL){               //一定要先判断非空，否则会报错
-                stream<<ui->see1->item(i,j)->text();
-                if(j<ui->see1->columnCount()-1){
-                    stream<<"\t";
-                }
-            }
-        }
-        stream<<"\n";
-    }
-    file.close();
+    close();//关闭窗口
 }
 
 
+void Widget::on_pushButton_clicked()//
+{
+    QList<QTableWidgetItem*> selections = ui->see1->selectedItems();
+    if(selections.size()==1)
+    {
+        QTableWidgetItem* item = selections[0];
+        int row = item->row();
+        QString state = ui->see1->item(row,5)->text();
+        if(state=="空闲"){
+            ui->see1->setItem(row,5,new QTableWidgetItem("有客"));
+            ui->see1->item(row,5)->setTextAlignment(Qt::AlignCenter);
+        }
+        else{ ui->see1->setItem(row,5,new QTableWidgetItem("空闲"));
+            ui->see1->item(row,5)->setTextAlignment(Qt::AlignCenter);
+        }
+    }
+}
 
+
+void Widget::on_pushButton_2_clicked()
+{
+    QList<QTableWidgetItem*> selections = ui->see1->selectedItems();
+    int colCount = ui->see1->columnCount(); //列数
+
+    for (int i = 0; i < selections.size(); i+= colCount)
+    {
+        QTableWidgetItem* item = selections[i];
+        int row = item->row();  //判断当前项在第几行，进行删除
+        ui->see1->removeRow(row);  //删除行。
+    }
+
+}
+
+
+void Widget::on_add_clicked()
+{
+    int RowCont=ui->see1->rowCount();
+    ui->see1->insertRow(RowCont);//增加一行
+}
+void Widget::on_pushButton_3_clicked()
+{
+    close();
+}
